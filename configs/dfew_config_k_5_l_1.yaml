@@ -1,0 +1,31 @@
+dataset: dfew
+model_type: ior_net
+max_iterations: 5
+mem_refiner_layers: 1
+use_odu: true
+use_pgs: true
+proto_mode: etf_learnable
+saliency_mode: max_proto
+split_mode: full
+inner_val_ratio: 0.10
+folds:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+epochs: 50
+batch_size: 8
+base_lr: 1.0e-5
+new_module_lr_mult: 10.0
+weight_decay: 0.05
+label_smoothing: 0.1
+warmup_ratio: 0.1
+grad_clip: 1.0
+num_frames: 16
+num_workers: 8
+seed: 42
+data_root: ./data/DFEW/Clip/clip_224x224_16f
+split_dir: ./data/DFEW/EmoLabel_DataSplit
+pretrained_path: ./pretrained/internvideo2_s14_k400.bin
+output_dir: ./outputs/dfew_k5_l1
