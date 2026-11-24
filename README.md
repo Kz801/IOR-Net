@@ -55,7 +55,7 @@ Evaluating intermediate predictions from the exact same trained checkpoints demo
 ### Qualitative Case Studies of Iterative Refinement
 
 <p align="center">
-  <img src="figures/case.png" alt="Qualitative Error Rectification Examples" width="92%" />
+  <img src="figures/Case.png" alt="Qualitative Error Rectification Examples" width="92%" />
 </p>
 <p align="center">
   <em><strong>Figure 2.</strong> Qualitative examples illustrating progressive error rectification across iterative refinement steps, where IOR-Net resolves initial feature ambiguities and converges to accurate expression predictions.</em>
