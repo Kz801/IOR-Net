@@ -20,7 +20,7 @@ Dynamic facial expressions in the wild are often transient, low-intensity, and c
 * **Prototype-Guided Saliency Module (PGSM):** Evaluates token-to-prototype alignment ($\epsilon = 0.1$) to emphasize expressive apices while suppressing non-informative neutral tokens and background clutter during feedback memory updates.
 
 <p align="center">
-  <img src="figures/OverView.pdf" alt="IOR-Net Architecture Overview" width="96%" />
+  <img src="figures/OverView.png" alt="IOR-Net Architecture Overview" width="96%" />
 </p>
 <p align="center">
   <em><strong>Figure 1.</strong> Overview of the Iterative Orthogonal Refinement Network (IOR-Net), operating across four stages: video tokenization, state initialization, $K$-step iterative orthogonal refinement with prototype-guided saliency filtering, and scaled cosine prototype prediction.</em>
@@ -55,7 +55,7 @@ Evaluating intermediate predictions from the exact same trained checkpoints demo
 ### Qualitative Case Studies of Iterative Refinement
 
 <p align="center">
-  <img src="figures/Fig_Case_Study_Eq12_F1_00684_F1_02705.pdf" alt="Qualitative Error Rectification Examples" width="92%" />
+  <img src="figures/case.png" alt="Qualitative Error Rectification Examples" width="92%" />
 </p>
 <p align="center">
   <em><strong>Figure 2.</strong> Qualitative examples illustrating progressive error rectification across iterative refinement steps, where IOR-Net resolves initial feature ambiguities and converges to accurate expression predictions.</em>
