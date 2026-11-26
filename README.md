@@ -10,28 +10,26 @@
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.7.0-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![CUDA](https://img.shields.io/badge/CUDA-12.8-76B900?logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuda-toolkit)
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Checkpoints-FFD21E)](https://huggingface.co/kz801/IOR-Net)
+[![Hugging Face](https://img.shields.io/badge/Hugging%20Face-Checkpoints-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/kz801/IOR-Net)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 </div>
 
 Official PyTorch implementation of **IOR-Net** (*Iterative Orthogonal Refinement Network with Prototype Saliency*) for Dynamic Facial Expression Recognition (DFER) in unconstrained scenarios.
 
----
-
 ## Overview
 
 Dynamic facial expressions in the wild are often transient, low-intensity, and degraded by pose variations, occlusions, background clutter, and neutral transition frames. Departing from conventional static feed-forward inference, **IOR-Net** formulates video expression recognition as progressive state-space estimation atop a Kinetics-400 pre-trained Vision Transformer video backbone (`InternVideo2-S/14`) through three coordinated components:
 
 - **Iterative Feedback Mechanism (IFM):** Establishes a weight-tied closed-loop recurrent inference trajectory across $K$ steps (interleaved with $K-1$ state updates) with Euclidean momentum integration ($\beta = 0.9$, $V_{S,0} = 0$) over the cognitive state $\mathcal{S}_k = \{M_k^{\text{loc}}, M_k^{\text{glo}}, H_k^{\text{loc}}, H_k^{\text{glo}}\}$ to revisit video representations and recursively rectify early misalignments.
-- **Orthogonal Decomposition Update Module (ODUM):** Uses learnable class prototypes $W \in \mathbb{R}^{C \times D}$ initialized as a row-orthonormal tight frame (orthogonal Equiangular Tight Frame, O-ETF, $W_0 W_0^\top = I_C$). At each step, ODUM performs exact class-wise orthogonal projection $P_k^s = \mathrm{Diag}(\mathrm{diag}(H_k^s \hat{W}^\top))\hat{W}$ and extracts the orthogonal residual $R_k^s = H_k^s - P_k^s \in \mathrm{span}(\hat{w}_c)^\perp$, structurally enforcing $\langle p_{k,c}^s, r_{k,c}^s \rangle = 0$ ($\max|\cos(P, R)| \le 3.59 \times 10^{-8}$) and confining refinement exclusively to $R_k^s$ to mitigate cross-class interference and feature collapse.
+- **Orthogonal Decomposition Update Module (ODUM):** Uses learnable class prototypes $W \in \mathbb{R}^{C \times D}$ initialized as a row-orthonormal tight frame (orthogonal Equiangular Tight Frame, O-ETF, $W_0 W_0^\top = I_C$). At each step, ODUM performs exact class-wise orthogonal projection $P_k^s = \mathrm{Diag}(\mathrm{diag}(H_k^s \hat{W}^\top))\hat{W}$ and extracts the orthogonal residual $R_k^s = H_k^s - P_k^s \in \mathrm{span}(\hat{w}_c)^\perp$, structurally enforcing $\langle p_{k,c}^s, r_{k,c}^s \rangle = 0$ ($\max\lvert\cos(P, R)\rvert \le 3.59 \times 10^{-8}$) and confining refinement exclusively to $R_k^s$ to mitigate cross-class interference and feature collapse.
 - **Prototype-Guided Saliency Module (PGSM):** Evaluates token-to-prototype maximum alignment across $L$ stacked inverted cross-attention layers with sharpened Softmax temperature $\epsilon = 0.1$, amplifying expressive apices while suppressing non-informative neutral tokens and background clutter during feedback memory updates.
 
 <p align="center">
   <img src="figures/OverView.png" alt="IOR-Net Architecture Overview" width="96%" />
 </p>
 <p align="center">
-  <em><strong>Figure 1.</strong> Overview of the Iterative Orthogonal Refinement Network (IOR-Net), operating across four progressive stages: video tokenization, state initialization, $K$-step iterative orthogonal refinement with prototype-guided saliency filtering, and scaled cosine prototype alignment.</em>
+  <em><strong>Figure 1.</strong> Overview of the Iterative Orthogonal Refinement Network (IOR-Net), operating across four stages: video tokenization, state initialization, $K$-step iterative orthogonal refinement with prototype-guided saliency filtering, and scaled cosine prototype prediction.</em>
 </p>
 
 
@@ -57,19 +55,19 @@ All models are trained end-to-end from Kinetics-400 pre-trained `InternVideo2-S/
 
 Inspecting intermediate readouts from a single trained checkpoint without auxiliary heads demonstrates statistically significant net-positive clip rectification, monotonic predictive entropy decay, and machine-precision ODUM orthogonality across all four benchmarks:
 
-| Benchmark            | Clips ($N$) | $y_0 \to \hat{y}_1 \to \hat{y}_K$ UAR (%) | $\hat{y}_1 \to \hat{y}_K$ WAR (%) | $\Delta\text{WAR}$ (%) |    +Corr / -Err (Ratio)    |   Exact McNemar $p$    |   $\max\|\cos(P, R)\|$    | $H(\hat{y}_1 \to \hat{y}_K)$ | Mean Flip (%) |
-| :------------------- | :---------: | :---------------------------------------: | :-------------------------------: | :--------------------: | :------------------------: | :--------------------: | :-----------------------: | :--------------------------: | :-----------: |
-| **DFEW** $(5, 1)$    |   11,697    |   $56.71 \to 60.54 \to \mathbf{63.72}$    |    $72.79 \to \mathbf{74.18}$     |        $+1.39$         | $+258$ / $-95$ ($2.72:1$)  | $1.57 \times 10^{-18}$ | $\le 2.73 \times 10^{-8}$ |      $0.828 \to 0.647$       |    $1.12$     |
-| **FERV39k** $(6, 1)$ |    7,847    |   $40.43 \to 42.17 \to \mathbf{43.09}$    |    $51.34 \to \mathbf{53.35}$     |        $+2.01$         | $+382$ / $-225$ ($1.70:1$) | $1.93 \times 10^{-10}$ | $\le 3.59 \times 10^{-8}$ |      $1.400 \to 1.277$       |    $2.66$     |
-| **MAFW-11** $(4, 1)$ |    9,172    |   $36.66 \to 41.24 \to \mathbf{42.21}$    |    $55.10 \to \mathbf{55.70}$     |        $+0.60$         | $+189$ / $-134$ ($1.41:1$) | $2.60 \times 10^{-3}$  | $\le 1.16 \times 10^{-8}$ |      $1.535 \to 1.379$       |    $2.35$     |
-| **MAFW-43** $(4, 1)$ |    8,996    |    $9.41 \to 13.36 \to \mathbf{14.54}$    |    $36.79 \to \mathbf{37.40}$     |        $+0.61$         | $+236$ / $-181$ ($1.30:1$) | $8.11 \times 10^{-3}$  | $\le 1.00 \times 10^{-8}$ |      $2.792 \to 2.057$       |    $4.18$     |
+| Benchmark            | Clips ($N$) | $y_0 \to \hat{y}_1 \to \hat{y}_K$ UAR (%) | $\hat{y}_1 \to \hat{y}_K$ WAR (%) | $\Delta\text{WAR}$ (%) |    +Corr / -Err (Ratio)    |   Exact McNemar $p$    | $\max\lvert\cos(P, R)\rvert$ | $H(\hat{y}_1 \to \hat{y}_K)$ | Mean Flip (%) |
+| :------------------- | :---------: | :---------------------------------------: | :-------------------------------: | :--------------------: | :------------------------: | :--------------------: | :--------------------------: | :--------------------------: | :-----------: |
+| **DFEW** $(5, 1)$    |   11,697    |   $56.71 \to 60.54 \to \mathbf{63.72}$    |    $72.79 \to \mathbf{74.18}$     |        $+1.39$         | $+258$ / $-95$ ($2.72:1$)  | $1.57 \times 10^{-18}$ |  $\le 2.73 \times 10^{-8}$   |      $0.828 \to 0.647$       |    $1.12$     |
+| **FERV39k** $(6, 1)$ |    7,847    |   $40.43 \to 42.17 \to \mathbf{43.09}$    |    $51.34 \to \mathbf{53.35}$     |        $+2.01$         | $+382$ / $-225$ ($1.70:1$) | $1.93 \times 10^{-10}$ |  $\le 3.59 \times 10^{-8}$   |      $1.400 \to 1.277$       |    $2.66$     |
+| **MAFW-11** $(4, 1)$ |    9,172    |   $36.66 \to 41.24 \to \mathbf{42.21}$    |    $55.10 \to \mathbf{55.70}$     |        $+0.60$         | $+189$ / $-134$ ($1.41:1$) | $2.60 \times 10^{-3}$  |  $\le 1.16 \times 10^{-8}$   |      $1.535 \to 1.379$       |    $2.35$     |
+| **MAFW-43** $(4, 1)$ |    8,996    |    $9.41 \to 13.36 \to \mathbf{14.54}$    |    $36.79 \to \mathbf{37.40}$     |        $+0.61$         | $+236$ / $-181$ ($1.30:1$) | $8.11 \times 10^{-3}$  |  $\le 1.00 \times 10^{-8}$   |      $2.792 \to 2.057$       |    $4.18$     |
 
-Learned O-ETF prototypes naturally preserve near-orthogonal inter-class separation throughout end-to-end training ($\bar{\theta} \in [89.43^\circ, 90.10^\circ]$, mean $|\langle \hat{w}_i, \hat{w}_j \rangle| \in [0.0154, 0.0760]$) without auxiliary orthogonality penalties.
+Learned O-ETF prototypes naturally preserve near-orthogonal inter-class separation throughout end-to-end training ($\bar{\theta} \in [89.43^\circ, 90.10^\circ]$, mean $\lvert\langle \hat{w}_i, \hat{w}_j \rangle\rvert \in [0.0154, 0.0760]$) without auxiliary orthogonality penalties.
 
 ### 3. Generalization & Corruption Robustness Highlights
 
-- **Six-Way Zero-Shot Cross-Dataset Generalization:** Without target-domain fine-tuning, IOR-Net improves over the identical-backbone Baseline across all six directed transfer pairs among DFEW, FERV39k, and MAFW-7, achieving up to $+10.17\%$ UAR on FERV39k $\to$ DFEW ($p = 7.72 \times 10^{-6}$), $+8.41\%$ on DFEW $\to$ MAFW-7 ($p = 5.15 \times 10^{-3}$), and $+7.87\%$ on FERV39k $\to$ MAFW-7 ($p = 2.12 \times 10^{-4}$), while maintaining $\max|\cos(P, R)| \le 3.42 \times 10^{-8}$.
-- **Unified 12-Condition Spatial & Temporal Corruption Robustness:** Under `dlib` 68-landmark-guided background removal, IOR-Net retains $94.8\%\text{--}99.1\%$ of clean UAR ($+8.58\%$ to $+11.00\%$ over Baseline). It outperforms the Baseline by $+11.05\%$ (DFEW), $+9.38\%$ (FERV39k), and $+9.49\%$ (MAFW-11) UAR under mouth occlusion, and retains $77.2\%\text{--}95.3\%$ of clean UAR across temporal corruptions (blackout, frame freeze, noisy frames, and full frame shuffling) with $\max|\cos(P, R)| \le 3.58 \times 10^{-8}$.
+- **Six-Way Zero-Shot Cross-Dataset Generalization:** Without target-domain fine-tuning, IOR-Net improves over the identical-backbone Baseline across all six directed transfer pairs among DFEW, FERV39k, and MAFW-7, achieving up to $+10.17\%$ UAR on FERV39k $\to$ DFEW ($p = 7.72 \times 10^{-6}$), $+8.41\%$ on DFEW $\to$ MAFW-7 ($p = 5.15 \times 10^{-3}$), and $+7.87\%$ on FERV39k $\to$ MAFW-7 ($p = 2.12 \times 10^{-4}$), while maintaining $\max\lvert\cos(P, R)\rvert \le 3.42 \times 10^{-8}$.
+- **Unified 12-Condition Spatial & Temporal Corruption Robustness:** Under `dlib` 68-landmark-guided background removal, IOR-Net retains $94.8\%\text{--}99.1\%$ of clean UAR ($+8.58\%$ to $+11.00\%$ over Baseline). It outperforms the Baseline by $+11.05\%$ (DFEW), $+9.38\%$ (FERV39k), and $+9.49\%$ (MAFW-11) UAR under mouth occlusion, and retains $77.2\%\text{--}95.3\%$ of clean UAR across temporal corruptions (blackout, frame freeze, noisy frames, and full frame shuffling) with $\max\lvert\cos(P, R)\rvert \le 3.58 \times 10^{-8}$.
 
 ### 4. Qualitative Case Studies of Iterative Refinement
 
@@ -77,7 +75,7 @@ Learned O-ETF prototypes naturally preserve near-orthogonal inter-class separati
   <img src="figures/Case.png" alt="Qualitative Error Rectification Examples" width="92%" />
 </p>
 <p align="center">
-  <em><strong>Figure 2.</strong> Clip-level qualitative examples on DFEW Fold-1 illustrating PGSM spatiotemporal saliency filtering and progressive decision rectification from $\hat{y}_1$ to $\hat{y}_5$, where IOR-Net suppresses neutral/occluded transition frames and converges to accurate expression predictions.</em>
+  <em><strong>Figure 2.</strong> Qualitative examples illustrating progressive error rectification across iterative refinement steps, where IOR-Net resolves initial feature ambiguities and converges to accurate expression predictions.</em>
 </p>
 
 
@@ -200,9 +198,9 @@ data/
 
 ## Pretrained Checkpoints
 
-All pretrained IOR-Net weights (covering the main benchmarks `dfew`, `ferv39k`, `mafw11`, `mafw43`, as well as `arch_search`) have been uploaded to Hugging Face at **[kz801/IOR-Net](https://huggingface.co/kz801/IOR-Net)**.
+Pretrained checkpoints for IOR-Net have been uploaded to Hugging Face at [**kz801/IOR-Net**](https://huggingface.co/kz801/IOR-Net).
 
-You can download all checkpoints directly into `./checkpoints/` using the Hugging Face CLI:
+You can download the checkpoints into `./checkpoints/` using the Hugging Face CLI:
 
 ```bash
 pip install -U "huggingface_hub[cli]"
@@ -216,8 +214,6 @@ from huggingface_hub import snapshot_download
 
 snapshot_download(repo_id="kz801/IOR-Net", local_dir="./checkpoints")
 ```
-
-> Additional ablation variants and multi-seed models (Seeds 100 and 2026) can be reproduced directly using the training scripts below.
 
 ---
 
@@ -348,16 +344,3 @@ python scripts/profile_efficiency.py --suite all --batch_size 8
 ## Acknowledgments
 
 This codebase builds upon the Vision Transformer video backbone from [OpenGVLab/InternVideo](https://github.com/OpenGVLab/InternVideo). We thank the authors of InternVideo2, DFEW, FERV39k, and MAFW for releasing their models and benchmarks to the research community.
-
-## Citation
-
-If you find this work useful in your research, please consider citing:
-
-```bibtex
-@article{zhang2026iornet,
-  title   = {IOR-Net: Iterative Orthogonal Refinement Network with Prototype Saliency for Dynamic Facial Expression Recognition},
-  author  = {Zhang, Kai and An, Bing and Li, Xinke},
-  journal = {IEEE Transactions on Image Processing},
-  year    = {2026}
-}
-```
